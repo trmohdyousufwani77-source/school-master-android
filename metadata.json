@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Remix School Master",
+  "description": "A comprehensive management system for school attendance, teacher leave, examination results, and automated reporting for primary schools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

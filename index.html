@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Holistic Student Progress Card Management System</title>
+    <meta name="description" content="Holistic Student Progress Card (HPC) Management System for schools. Student records, classes, 6 core subjects, marks entry, attendance, life skills assessment, and printable A4 PDF progress cards." />
+    <meta property="og:title" content="Holistic Student Progress Card Management System" />
+    <meta property="og:description" content="Holistic Student Progress Card (HPC) Management System for schools. Student records, classes, 6 core subjects, marks entry, attendance, life skills assessment, and printable A4 PDF progress cards." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
+
+    <!-- Theme Color & Mobile Settings -->
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS Specific PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SchoolMaster" />
+
+    <!-- Windows Specific Meta Tags -->
+    <meta name="msapplication-TileColor" content="#4f46e5" />
+    <meta name="msapplication-TileImage" content="/pwa-512x512.svg" />
+    <meta name="application-name" content="School Master" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Suppress disabled HMR transport websocket errors in iframe sandbox -->
+    <script>
+      (function() {
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e?.reason?.message?.includes("reading 'send'") || e?.reason?.message?.includes('WebSocket')) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        });
+        window.addEventListener('error', function(e) {
+          if (e?.message?.includes("reading 'send'") || e?.message?.includes('WebSocket')) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+      })();
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

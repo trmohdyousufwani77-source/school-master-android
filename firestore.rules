@@ -1,0 +1,775 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'mohdyousufwani1977@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Strictly original App Developer / Super Administrator gate (School Admins cannot pass this gate)
+    function isSuperDeveloperAdmin() {
+      return isBootstrappedAdmin();
+    }
+
+    // Entity Validators (Blueprint Synchronized)
+    function isValidAdminEntry(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'name', 'role', 'createdAt']) &&
+        data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 160 &&
+        (!('name' in data) || (data.name is string && data.name.size() <= 120)) &&
+        data.role in ['primary_admin', 'senior_admin', 'junior_admin'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSchoolProfile(data) {
+      return data.keys().hasAll(['name', 'code', 'academicSession', 'updatedAt']) &&
+        data.keys().hasOnly(['name', 'nameUrdu', 'code', 'address', 'district', 'state', 'pinCode', 'academicSession', 'headTeacherName', 'motto', 'updatedAt']) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 160 &&
+        (!('nameUrdu' in data) || (data.nameUrdu is string && data.nameUrdu.size() <= 200)) &&
+        data.code is string && data.code.size() >= 4 && data.code.size() <= 32 &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 300)) &&
+        (!('district' in data) || (data.district is string && data.district.size() <= 80)) &&
+        (!('state' in data) || (data.state is string && data.state.size() <= 80)) &&
+        (!('pinCode' in data) || (data.pinCode is string && data.pinCode.size() <= 16)) &&
+        data.academicSession is string && data.academicSession.size() <= 32 &&
+        (!('headTeacherName' in data) || (data.headTeacherName is string && data.headTeacherName.size() <= 120)) &&
+        (!('motto' in data) || (data.motto is string && data.motto.size() <= 120)) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPrincipal(data) {
+      return data.keys().hasAll(['id', 'fullName', 'designation', 'joiningDate', 'isCurrent', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'fullName', 'designation', 'joiningDate', 'leavingDate', 'contactNumber', 'email', 'qualification', 'description', 'isCurrent', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 120 &&
+        data.designation in ['Principal', 'Headmaster', 'Headmistress', 'Officiating Principal', 'In-Charge Headmaster'] &&
+        data.joiningDate is string && data.joiningDate.size() <= 32 &&
+        (!('leavingDate' in data) || (data.leavingDate is string && data.leavingDate.size() <= 32)) &&
+        (!('contactNumber' in data) || (data.contactNumber is string && data.contactNumber.size() <= 32)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 120)) &&
+        (!('qualification' in data) || (data.qualification is string && data.qualification.size() <= 160)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+        data.isCurrent is bool &&
+        data.createdByUid is string && data.createdByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'admissionNumber', 'fullName', 'classNumber', 'section', 'status', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'admissionNumber', 'fullName', 'fatherName', 'motherName', 'gender', 'dob', 'classNumber', 'section', 'rollNumber', 'category', 'religion', 'nationality', 'address', 'mobileNumber', 'previousSchool', 'admissionDate', 'academicSession', 'status', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.admissionNumber is string && data.admissionNumber.size() >= 1 && data.admissionNumber.size() <= 64 &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 140 &&
+        (!('fatherName' in data) || (data.fatherName is string && data.fatherName.size() <= 140)) &&
+        (!('motherName' in data) || (data.motherName is string && data.motherName.size() <= 140)) &&
+        (!('gender' in data) || data.gender in ['Male', 'Female', 'Other']) &&
+        (!('dob' in data) || (data.dob is string && data.dob.size() <= 32)) &&
+        data.classNumber is string && data.classNumber.size() <= 24 &&
+        data.section is string && data.section.size() <= 16 &&
+        (!('rollNumber' in data) || data.rollNumber is int) &&
+        (!('category' in data) || (data.category is string && data.category.size() <= 40)) &&
+        (!('religion' in data) || (data.religion is string && data.religion.size() <= 40)) &&
+        (!('nationality' in data) || (data.nationality is string && data.nationality.size() <= 60)) &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 300)) &&
+        (!('mobileNumber' in data) || (data.mobileNumber is string && data.mobileNumber.size() <= 32)) &&
+        (!('previousSchool' in data) || (data.previousSchool is string && data.previousSchool.size() <= 160)) &&
+        (!('admissionDate' in data) || (data.admissionDate is string && data.admissionDate.size() <= 32)) &&
+        (!('academicSession' in data) || (data.academicSession is string && data.academicSession.size() <= 32)) &&
+        data.status in ['Active', 'Transferred', 'Graduated', 'Archived'] &&
+        data.createdByUid is string && data.createdByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOcrBatch(data) {
+      return data.keys().hasAll(['id', 'sourceName', 'sourceType', 'totalScanned', 'importedCount', 'actorUid', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'sourceName', 'sourceType', 'totalScanned', 'importedCount', 'failedCount', 'duplicateCount', 'undone', 'actorUid', 'actorName', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.sourceName is string && data.sourceName.size() <= 200 &&
+        data.sourceType in ['camera', 'image', 'pdf', 'excel', 'csv', 'text'] &&
+        data.totalScanned is int &&
+        data.importedCount is int &&
+        (!('failedCount' in data) || data.failedCount is int) &&
+        (!('duplicateCount' in data) || data.duplicateCount is int) &&
+        (!('undone' in data) || data.undone is bool) &&
+        data.actorUid is string && data.actorUid.size() <= 128 &&
+        (!('actorName' in data) || (data.actorName is string && data.actorName.size() <= 120)) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidLigatureReport(data) {
+      return data.keys().hasAll(['id', 'word', 'issueType', 'reportedByUid', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'word', 'unicodeHex', 'issueType', 'notes', 'reportedByUid', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.word is string && data.word.size() >= 1 && data.word.size() <= 120 &&
+        (!('unicodeHex' in data) || (data.unicodeHex is string && data.unicodeHex.size() <= 250)) &&
+        data.issueType in ['Missing Glyph', 'Overlapping Nuqta', 'Broken Join', 'Spacing Anomaly'] &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 400)) &&
+        data.reportedByUid is string && data.reportedByUid.size() <= 128 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidFcmToken(data) {
+      return data.keys().hasAll(['id', 'uid', 'token', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'uid', 'token', 'role', 'platform', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+        data.token is string && data.token.size() >= 10 && data.token.size() <= 512 &&
+        data.role in ['teacher', 'admin', 'principal'] &&
+        (!('platform' in data) || (data.platform is string && data.platform.size() <= 40)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPushNotification(data) {
+      return data.keys().hasAll(['id', 'title', 'message', 'category', 'targetRole', 'priority', 'senderUid', 'read', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'title', 'message', 'category', 'targetRole', 'priority', 'senderUid', 'read', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 180 &&
+        data.message is string && data.message.size() >= 2 && data.message.size() <= 600 &&
+        data.category in ['System', 'Academic', 'Attendance', 'Inspection', 'Leave', 'Exam'] &&
+        data.targetRole in ['teacher', 'admin', 'all'] &&
+        data.priority in ['high', 'normal'] &&
+        data.senderUid is string && data.senderUid.size() > 0 && data.senderUid.size() <= 128 &&
+        data.read is bool &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidExcelMappingSchema(data) {
+      return data.keys().hasAll(['id', 'name', 'columns', 'columnsCount', 'isDefault', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'name', 'description', 'sheetName', 'columns', 'columnsCount', 'isDefault', 'createdByUid', 'createdByName', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 300)) &&
+        (!('sheetName' in data) || (data.sheetName is string && data.sheetName.size() <= 80)) &&
+        data.columns is list && data.columns.size() > 0 && data.columns.size() <= 60 && data.columns[0] is map &&
+        data.columnsCount is int && data.columnsCount > 0 && data.columnsCount <= 60 &&
+        data.isDefault is bool &&
+        data.createdByUid is string && data.createdByUid.size() > 0 && data.createdByUid.size() <= 128 &&
+        (!('createdByName' in data) || (data.createdByName is string && data.createdByName.size() <= 120)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidJkepmSubmission(data) {
+      return data.keys().hasAll([
+          'id', 'teacherId', 'teacherName', 'employeeId', 'cpisCode',
+          'schoolUdiseCode', 'academicSession', 'quarter', 'status',
+          'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'teacherId', 'teacherName', 'employeeId', 'cpisCode', 'previousCpisCode',
+          'designation', 'schoolName', 'schoolUdiseCode', 'academicSession', 'quarter',
+          'reportingPeriod', 'status', 'totalWorkingDays', 'totalDaysAttended',
+          'totalLeaveDays', 'attendancePercentage', 'selfAssessmentScore',
+          'hoiRemarks', 'districtRemarks', 'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.teacherId is string && data.teacherId.size() >= 1 && data.teacherId.size() <= 80 &&
+        data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 140 &&
+        data.employeeId is string && data.employeeId.size() >= 2 && data.employeeId.size() <= 64 &&
+        data.cpisCode is string && data.cpisCode.size() >= 4 && data.cpisCode.size() <= 40 &&
+        (!('previousCpisCode' in data) || (data.previousCpisCode is string && data.previousCpisCode.size() <= 40)) &&
+        (!('designation' in data) || (data.designation is string && data.designation.size() <= 140)) &&
+        (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() <= 180)) &&
+        data.schoolUdiseCode is string && data.schoolUdiseCode.size() <= 32 &&
+        data.academicSession is string && data.academicSession.size() <= 32 &&
+        data.quarter in ['Q1 (Apr - Jun)', 'Q2 (Jul - Sep)', 'Q3 (Oct - Dec)', 'Q4 (Jan - Mar)'] &&
+        (!('reportingPeriod' in data) || (data.reportingPeriod is string && data.reportingPeriod.size() <= 80)) &&
+        data.status in ['Draft', 'Submitted', 'Returned_For_Correction', 'Recommended_By_HOI', 'Approved', 'Rejected'] &&
+        (!('totalWorkingDays' in data) || (data.totalWorkingDays is int && data.totalWorkingDays >= 0 && data.totalWorkingDays <= 366)) &&
+        (!('totalDaysAttended' in data) || (data.totalDaysAttended is int && data.totalDaysAttended >= 0 && data.totalDaysAttended <= 366)) &&
+        (!('totalLeaveDays' in data) || (data.totalLeaveDays is int && data.totalLeaveDays >= 0 && data.totalLeaveDays <= 366)) &&
+        (!('attendancePercentage' in data) || (data.attendancePercentage is number && data.attendancePercentage >= 0 && data.attendancePercentage <= 100)) &&
+        (!('selfAssessmentScore' in data) || (data.selfAssessmentScore is number && data.selfAssessmentScore >= 0 && data.selfAssessmentScore <= 10)) &&
+        (!('hoiRemarks' in data) || (data.hoiRemarks is string && data.hoiRemarks.size() <= 1000)) &&
+        (!('districtRemarks' in data) || (data.districtRemarks is string && data.districtRemarks.size() <= 1000)) &&
+        data.createdByUid is string && data.createdByUid.size() > 0 && data.createdByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCpisMigration(data) {
+      return data.keys().hasAll([
+          'id', 'teacherId', 'teacherName', 'oldCpisCode', 'newCpisCode',
+          'status', 'requestedByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'teacherId', 'teacherName', 'schoolUdiseCode', 'oldCpisCode',
+          'newCpisCode', 'status', 'requestedByUid', 'requestedByName',
+          'verifiedByName', 'remarks', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.teacherId is string && data.teacherId.size() >= 1 && data.teacherId.size() <= 80 &&
+        data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 140 &&
+        (!('schoolUdiseCode' in data) || (data.schoolUdiseCode is string && data.schoolUdiseCode.size() <= 32)) &&
+        data.oldCpisCode is string && data.oldCpisCode.size() >= 4 && data.oldCpisCode.size() <= 40 &&
+        data.newCpisCode is string && data.newCpisCode.size() >= 4 && data.newCpisCode.size() <= 40 &&
+        data.status in ['Pending_Verification', 'Approved', 'Rejected'] &&
+        data.requestedByUid is string && data.requestedByUid.size() > 0 && data.requestedByUid.size() <= 128 &&
+        (!('requestedByName' in data) || (data.requestedByName is string && data.requestedByName.size() <= 140)) &&
+        (!('verifiedByName' in data) || (data.verifiedByName is string && data.verifiedByName.size() <= 140)) &&
+        (!('remarks' in data) || (data.remarks is string && data.remarks.size() <= 600)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTeacherLeave(data) {
+      return data.keys().hasAll([
+          'id', 'teacherId', 'employeeId', 'teacherName', 'leaveType',
+          'applicationDate', 'startDate', 'endDate', 'totalDays', 'reason',
+          'status', 'deletedStatus', 'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'teacherId', 'employeeId', 'teacherName', 'leaveType',
+          'applicationDate', 'startDate', 'endDate', 'totalDays', 'reason',
+          'supportingDocName', 'medicalDocumentUrl', 'status',
+          'headmasterRemarks', 'rejectionReason', 'approvedBy', 'approvalDate',
+          'deletedStatus', 'deletedBy', 'deletionReason',
+          'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.teacherId is string && data.teacherId.size() >= 1 && data.teacherId.size() <= 80 &&
+        data.employeeId is string && data.employeeId.size() >= 2 && data.employeeId.size() <= 64 &&
+        data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 140 &&
+        data.leaveType in ['Casual_Leave', 'Medical_Leave', 'Earned_Leave', 'Special_Duty', 'Maternity_Paternity'] &&
+        data.applicationDate is string && data.applicationDate.size() >= 4 && data.applicationDate.size() <= 32 &&
+        data.startDate is string && data.startDate.size() >= 4 && data.startDate.size() <= 32 &&
+        data.endDate is string && data.endDate.size() >= 4 && data.endDate.size() <= 32 &&
+        data.totalDays is int && data.totalDays >= 1 && data.totalDays <= 366 &&
+        data.reason is string && data.reason.size() >= 2 && data.reason.size() <= 1000 &&
+        (!('supportingDocName' in data) || (data.supportingDocName is string && data.supportingDocName.size() <= 200)) &&
+        (!('medicalDocumentUrl' in data) || (data.medicalDocumentUrl is string && data.medicalDocumentUrl.size() <= 500)) &&
+        data.status in ['Pending', 'Under_Review', 'Approved', 'Rejected'] &&
+        (!('headmasterRemarks' in data) || (data.headmasterRemarks is string && data.headmasterRemarks.size() <= 1000)) &&
+        (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 1000)) &&
+        (!('approvedBy' in data) || (data.approvedBy is string && data.approvedBy.size() <= 140)) &&
+        (!('approvalDate' in data) || (data.approvalDate is string && data.approvalDate.size() <= 32)) &&
+        data.deletedStatus in ['Active', 'Deleted'] &&
+        (!('deletedBy' in data) || (data.deletedBy is string && data.deletedBy.size() <= 140)) &&
+        (!('deletionReason' in data) || (data.deletionReason is string && data.deletionReason.size() <= 500)) &&
+        data.createdByUid is string && data.createdByUid.size() > 0 && data.createdByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTeacherAttendance(data) {
+      return data.keys().hasAll([
+          'id', 'date', 'teacherId', 'employeeId', 'teacherName', 'status',
+          'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'date', 'teacherId', 'employeeId', 'teacherName', 'designation',
+          'status', 'checkInTime', 'checkOutTime', 'remarks', 'remarksByHoi',
+          'updatedBy', 'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.date is string && data.date.size() >= 4 && data.date.size() <= 32 &&
+        data.teacherId is string && data.teacherId.size() >= 1 && data.teacherId.size() <= 80 &&
+        data.employeeId is string && data.employeeId.size() >= 2 && data.employeeId.size() <= 64 &&
+        data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 140 &&
+        (!('designation' in data) || (data.designation is string && data.designation.size() <= 140)) &&
+        data.status in [
+          'Present', 'Absent', 'Casual Leave (CL)', 'Medical Leave (ML)',
+          'On Duty (OD)', 'Half Day', 'Late Arrival', 'Other',
+          'Late', 'On_Duty', 'Leave', 'On Leave', 'Official Duty', 'Holiday', 'Weekly Off'
+        ] &&
+        (!('checkInTime' in data) || (data.checkInTime is string && data.checkInTime.size() <= 32)) &&
+        (!('checkOutTime' in data) || (data.checkOutTime is string && data.checkOutTime.size() <= 32)) &&
+        (!('remarks' in data) || (data.remarks is string && data.remarks.size() <= 1000)) &&
+        (!('remarksByHoi' in data) || (data.remarksByHoi is string && data.remarksByHoi.size() <= 1000)) &&
+        (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() <= 140)) &&
+        data.createdByUid is string && data.createdByUid.size() > 0 && data.createdByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidStudentAttendance(data) {
+      return data.keys().hasAll([
+          'id', 'date', 'studentId', 'classNumber', 'section', 'status',
+          'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'date', 'studentId', 'studentName', 'admissionNumber',
+          'classNumber', 'section', 'status', 'academicSession',
+          'markedByUserId', 'markedAt', 'remarks',
+          'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.date is string && data.date.size() >= 4 && data.date.size() <= 32 &&
+        data.studentId is string && data.studentId.size() >= 1 && data.studentId.size() <= 80 &&
+        (!('studentName' in data) || (data.studentName is string && data.studentName.size() <= 140)) &&
+        (!('admissionNumber' in data) || (data.admissionNumber is string && data.admissionNumber.size() <= 64)) &&
+        data.classNumber is string && data.classNumber.size() >= 1 && data.classNumber.size() <= 24 &&
+        data.section is string && data.section.size() >= 1 && data.section.size() <= 16 &&
+        data.status in ['Present', 'Absent', 'Late', 'Approved_Leave'] &&
+        (!('academicSession' in data) || (data.academicSession is string && data.academicSession.size() <= 32)) &&
+        (!('markedByUserId' in data) || (data.markedByUserId is string && data.markedByUserId.size() <= 80)) &&
+        (!('markedAt' in data) || (data.markedAt is string && data.markedAt.size() <= 64)) &&
+        (!('remarks' in data) || (data.remarks is string && data.remarks.size() <= 500)) &&
+        data.createdByUid is string && data.createdByUid.size() > 0 && data.createdByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSchoolAboutUsInfo(data) {
+      return data.keys().hasAll(['id', 'schoolName', 'appName', 'updatedByUid', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'schoolName', 'schoolIntroduction', 'schoolHistory', 'schoolVision',
+          'schoolMission', 'schoolObjectives', 'schoolAddress', 'schoolContactNumber',
+          'schoolEmail', 'schoolWebsite', 'schoolLogoUrl', 'schoolFacilities',
+          'principalsMessage', 'otherSchoolInfo', 'appName', 'appDescription',
+          'appVersion', 'appFeatures', 'appPurpose', 'appSupportEmail',
+          'appSupportContactNumber', 'privacyPolicy', 'termsAndConditions',
+          'copyrightInfo', 'updatedByUid', 'updatedByName', 'updatedByRole', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.schoolName is string && data.schoolName.size() >= 2 && data.schoolName.size() <= 180 &&
+        (!('schoolIntroduction' in data) || (data.schoolIntroduction is string && data.schoolIntroduction.size() <= 2000)) &&
+        (!('schoolHistory' in data) || (data.schoolHistory is string && data.schoolHistory.size() <= 2000)) &&
+        (!('schoolVision' in data) || (data.schoolVision is string && data.schoolVision.size() <= 1000)) &&
+        (!('schoolMission' in data) || (data.schoolMission is string && data.schoolMission.size() <= 1000)) &&
+        (!('schoolObjectives' in data) || (data.schoolObjectives is string && data.schoolObjectives.size() <= 1500)) &&
+        (!('schoolAddress' in data) || (data.schoolAddress is string && data.schoolAddress.size() <= 350)) &&
+        (!('schoolContactNumber' in data) || (data.schoolContactNumber is string && data.schoolContactNumber.size() <= 40)) &&
+        (!('schoolEmail' in data) || (data.schoolEmail is string && data.schoolEmail.size() <= 140)) &&
+        (!('schoolWebsite' in data) || (data.schoolWebsite is string && data.schoolWebsite.size() <= 220)) &&
+        (!('schoolLogoUrl' in data) || (data.schoolLogoUrl is string && data.schoolLogoUrl.size() <= 500)) &&
+        (!('schoolFacilities' in data) || (data.schoolFacilities is string && data.schoolFacilities.size() <= 1500)) &&
+        (!('principalsMessage' in data) || (data.principalsMessage is string && data.principalsMessage.size() <= 2000)) &&
+        (!('otherSchoolInfo' in data) || (data.otherSchoolInfo is string && data.otherSchoolInfo.size() <= 1500)) &&
+        data.appName is string && data.appName.size() >= 2 && data.appName.size() <= 140 &&
+        (!('appDescription' in data) || (data.appDescription is string && data.appDescription.size() <= 1500)) &&
+        (!('appVersion' in data) || (data.appVersion is string && data.appVersion.size() <= 40)) &&
+        (!('appFeatures' in data) || (data.appFeatures is string && data.appFeatures.size() <= 2000)) &&
+        (!('appPurpose' in data) || (data.appPurpose is string && data.appPurpose.size() <= 1200)) &&
+        (!('appSupportEmail' in data) || (data.appSupportEmail is string && data.appSupportEmail.size() <= 140)) &&
+        (!('appSupportContactNumber' in data) || (data.appSupportContactNumber is string && data.appSupportContactNumber.size() <= 40)) &&
+        (!('privacyPolicy' in data) || (data.privacyPolicy is string && data.privacyPolicy.size() <= 3000)) &&
+        (!('termsAndConditions' in data) || (data.termsAndConditions is string && data.termsAndConditions.size() <= 3000)) &&
+        (!('copyrightInfo' in data) || (data.copyrightInfo is string && data.copyrightInfo.size() <= 300)) &&
+        data.updatedByUid is string && data.updatedByUid.size() > 0 && data.updatedByUid.size() <= 128 &&
+        (!('updatedByName' in data) || (data.updatedByName is string && data.updatedByName.size() <= 140)) &&
+        (!('updatedByRole' in data) || (data.updatedByRole is string && data.updatedByRole.size() <= 40)) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSchoolInfoAuditLog(data) {
+      return data.keys().hasAll(['id', 'section', 'action', 'summary', 'actorUid', 'actorName', 'actorRole', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'section', 'action', 'changedFields', 'summary', 'actorUid', 'actorName', 'actorRole', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.section in ['About Us', 'App Information', 'School Logo'] &&
+        data.action in ['CREATE', 'UPDATE'] &&
+        (!('changedFields' in data) || (data.changedFields is string && data.changedFields.size() <= 600)) &&
+        data.summary is string && data.summary.size() >= 2 && data.summary.size() <= 600 &&
+        data.actorUid is string && data.actorUid.size() > 0 && data.actorUid.size() <= 128 &&
+        data.actorName is string && data.actorName.size() >= 1 && data.actorName.size() <= 140 &&
+        data.actorRole is string && data.actorRole.size() >= 1 && data.actorRole.size() <= 40 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidProtectedDeveloperProfile(data) {
+      return data.keys().hasAll(['id', 'developerName', 'designation', 'isProtected', 'updatedByUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'developerName', 'developerProfile', 'designation', 'institution',
+          'locality', 'district', 'unionTerritory', 'developerEmail', 'developerPhone',
+          'administratorName', 'administratorProfile', 'ownershipNotice',
+          'isProtected', 'updatedByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.developerName is string && data.developerName.size() >= 2 && data.developerName.size() <= 140 &&
+        (!('developerProfile' in data) || (data.developerProfile is string && data.developerProfile.size() <= 1000)) &&
+        data.designation is string && data.designation.size() >= 2 && data.designation.size() <= 140 &&
+        (!('institution' in data) || (data.institution is string && data.institution.size() <= 180)) &&
+        (!('locality' in data) || (data.locality is string && data.locality.size() <= 120)) &&
+        (!('district' in data) || (data.district is string && data.district.size() <= 80)) &&
+        (!('unionTerritory' in data) || (data.unionTerritory is string && data.unionTerritory.size() <= 100)) &&
+        (!('developerEmail' in data) || (data.developerEmail is string && data.developerEmail.size() <= 140)) &&
+        (!('developerPhone' in data) || (data.developerPhone is string && data.developerPhone.size() <= 40)) &&
+        (!('administratorName' in data) || (data.administratorName is string && data.administratorName.size() <= 140)) &&
+        (!('administratorProfile' in data) || (data.administratorProfile is string && data.administratorProfile.size() <= 1000)) &&
+        (!('ownershipNotice' in data) || (data.ownershipNotice is string && data.ownershipNotice.size() <= 500)) &&
+        data.isProtected is bool && data.isProtected == true &&
+        data.updatedByUid is string && data.updatedByUid.size() > 0 && data.updatedByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // /admins/{adminUid} - Authorised Admins Registry
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && (isAdmin() || (isVerifiedUser() && request.auth.uid == adminUid));
+      allow list: if isAdmin();
+      allow create: if isValidId(adminUid) && isAdmin() && isValidAdminEntry(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(adminUid) && isAdmin() && isValidAdminEntry(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['email', 'name', 'role']);
+      allow delete: if isValidId(adminUid) && isBootstrappedAdmin();
+    }
+
+    // /schools/{schoolId} - School Profile (Non-PII institution identity + admin controlled writes)
+    match /schools/{schoolId} {
+      allow get: if isValidId(schoolId) && isVerifiedUser();
+      allow list: if isAdmin();
+      allow create: if isValidId(schoolId) && isAdmin() && isValidSchoolProfile(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isValidId(schoolId) && isAdmin() && isValidSchoolProfile(incoming()) &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'nameUrdu', 'code', 'address', 'district', 'state', 'pinCode', 'academicSession', 'headTeacherName', 'motto', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // /principals/{principalId} - Current & Historical Principal / Headmaster Records (contains contact PII -> admin only)
+    match /principals/{principalId} {
+      allow get: if isValidId(principalId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(principalId) && isAdmin() && isValidPrincipal(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(principalId) && isAdmin() && isValidPrincipal(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'designation', 'joiningDate', 'leavingDate', 'contactNumber', 'email', 'qualification', 'description', 'isCurrent', 'updatedAt']);
+      allow delete: if isValidId(principalId) && isAdmin();
+    }
+
+    // /students/{studentId} - Student Admission Database (Strict PII isolation: Admin or creator)
+    match /students/{studentId} {
+      allow get: if isValidId(studentId) && (isAdmin() || (isVerifiedUser() && existing().createdByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && resource.data.createdByUid == request.auth.uid;
+      allow create: if isValidId(studentId) && isAdmin() && isValidStudent(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(studentId) && isAdmin() && isValidStudent(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['admissionNumber', 'fullName', 'fatherName', 'motherName', 'gender', 'dob', 'classNumber', 'section', 'rollNumber', 'category', 'religion', 'nationality', 'address', 'mobileNumber', 'previousSchool', 'admissionDate', 'academicSession', 'status', 'updatedAt']);
+      allow delete: if isValidId(studentId) && isAdmin();
+    }
+
+    // /ocrBatches/{batchId} - Bulk OCR / Excel Import History
+    match /ocrBatches/{batchId} {
+      allow get: if isValidId(batchId) && isAdmin();
+      allow list: if isVerifiedUser() && resource.data.actorUid == request.auth.uid;
+      allow create: if isValidId(batchId) && isAdmin() && isValidOcrBatch(incoming()) &&
+        incoming().actorUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(batchId) && isAdmin() && isValidOcrBatch(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().actorUid == existing().actorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['undone', 'importedCount', 'failedCount', 'duplicateCount']);
+      allow delete: if isValidId(batchId) && isAdmin();
+    }
+
+    // /ligatureReports/{reportId} - Noori Nastaleeq Missing Ligature Reports
+    match /ligatureReports/{reportId} {
+      allow get: if isValidId(reportId) && (isAdmin() || (isVerifiedUser() && existing().reportedByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && resource.data.reportedByUid == request.auth.uid;
+      allow create: if isValidId(reportId) && isVerifiedUser() && isValidLigatureReport(incoming()) &&
+        incoming().reportedByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(reportId) && (isAdmin() || (isVerifiedUser() && existing().reportedByUid == request.auth.uid));
+    }
+
+    // /fcmTokens/{tokenId} - FCM Device Registration Tokens (strict owner/admin access)
+    match /fcmTokens/{tokenId} {
+      allow get: if isValidId(tokenId) && (isAdmin() || (isVerifiedUser() && existing().uid == request.auth.uid));
+      allow list: if isVerifiedUser() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(tokenId) && isVerifiedUser() && isValidFcmToken(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(tokenId) && isVerifiedUser() && isValidFcmToken(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().uid == existing().uid &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['token', 'role', 'platform', 'updatedAt']);
+      allow delete: if isValidId(tokenId) && (isAdmin() || (isVerifiedUser() && existing().uid == request.auth.uid));
+    }
+
+    // /notifications/{notificationId} - Push Notification Feed
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && (
+        isAdmin() || (isVerifiedUser() && (existing().senderUid == request.auth.uid || existing().targetRole in ['all', 'teacher']))
+      );
+      allow list: if isVerifiedUser() && (
+        resource.data.senderUid == request.auth.uid || resource.data.targetRole in ['all', 'teacher']
+      );
+      allow create: if isValidId(notificationId) && isVerifiedUser() && isValidPushNotification(incoming()) &&
+        incoming().senderUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(notificationId) && isVerifiedUser() && isValidPushNotification(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().senderUid == existing().senderUid &&
+        incoming().createdAt == existing().createdAt &&
+        (isAdmin() || existing().senderUid == request.auth.uid) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isValidId(notificationId) && (isAdmin() || (isVerifiedUser() && existing().senderUid == request.auth.uid));
+    }
+
+    // /excelMappingSchemas/{schemaId} - Custom Excel Template Mapping Schemas (Admin configured)
+    match /excelMappingSchemas/{schemaId} {
+      allow get: if isValidId(schemaId) && (isAdmin() || (isVerifiedUser() && existing().createdByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && resource.data.createdByUid == request.auth.uid;
+      allow create: if isValidId(schemaId) && isAdmin() && isValidExcelMappingSchema(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(schemaId) && isAdmin() && isValidExcelMappingSchema(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'sheetName', 'columns', 'columnsCount', 'isDefault', 'updatedAt']);
+      allow delete: if isValidId(schemaId) && isAdmin();
+    }
+
+    // /jkepmSubmissions/{submissionId} - JKEPM Quarterly Self-Assessment & Appraisal Reports
+    match /jkepmSubmissions/{submissionId} {
+      allow get: if isValidId(submissionId) && (isAdmin() || (isVerifiedUser() && existing().createdByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.createdByUid == request.auth.uid);
+      allow create: if isValidId(submissionId) && isVerifiedUser() && isValidJkepmSubmission(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        (isAdmin() || incoming().status in ['Draft', 'Submitted']);
+      allow update: if isValidId(submissionId) && isVerifiedUser() && isValidJkepmSubmission(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Tier 1: Authorized Admin / HOI verification, recommendation, approval, or return
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'teacherName', 'employeeId', 'cpisCode', 'previousCpisCode', 'designation',
+            'schoolName', 'schoolUdiseCode', 'academicSession', 'quarter', 'reportingPeriod',
+            'status', 'totalWorkingDays', 'totalDaysAttended', 'totalLeaveDays',
+            'attendancePercentage', 'selfAssessmentScore', 'hoiRemarks', 'districtRemarks', 'updatedAt'
+          ])) ||
+          // Tier 2: Teacher owner editing draft or returned report (locked once Approved)
+          (existing().createdByUid == request.auth.uid &&
+            existing().status in ['Draft', 'Returned_For_Correction'] &&
+            incoming().status in ['Draft', 'Submitted'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'teacherName', 'employeeId', 'cpisCode', 'previousCpisCode', 'designation',
+              'schoolName', 'schoolUdiseCode', 'academicSession', 'quarter', 'reportingPeriod',
+              'status', 'totalWorkingDays', 'totalDaysAttended', 'totalLeaveDays',
+              'attendancePercentage', 'selfAssessmentScore', 'updatedAt'
+            ]))
+        );
+      allow delete: if isValidId(submissionId) && (
+        isAdmin() ||
+        (isVerifiedUser() && existing().createdByUid == request.auth.uid && existing().status == 'Draft')
+      );
+    }
+
+    // /cpisMigrations/{migrationId} - Immutable CPIS Code Migration Audit Trail
+    match /cpisMigrations/{migrationId} {
+      allow get: if isValidId(migrationId) && (isAdmin() || (isVerifiedUser() && existing().requestedByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.requestedByUid == request.auth.uid);
+      allow create: if isValidId(migrationId) && isVerifiedUser() && isValidCpisMigration(incoming()) &&
+        incoming().requestedByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        (isAdmin() || incoming().status == 'Pending_Verification');
+      allow update: if isValidId(migrationId) && isAdmin() && isValidCpisMigration(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().teacherId == existing().teacherId &&
+        incoming().oldCpisCode == existing().oldCpisCode &&
+        incoming().requestedByUid == existing().requestedByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['newCpisCode', 'status', 'verifiedByName', 'remarks', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // /teacherLeaves/{leaveId} - Teacher Leave Management (Casual & Medical Leave, HOI Review/Approve/Reject, Audit Soft-Delete)
+    match /teacherLeaves/{leaveId} {
+      allow get: if isValidId(leaveId) && (isAdmin() || (isVerifiedUser() && existing().createdByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.createdByUid == request.auth.uid);
+      allow create: if isValidId(leaveId) && isVerifiedUser() && isValidTeacherLeave(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        incoming().deletedStatus == 'Active' &&
+        (isAdmin() || incoming().status == 'Pending');
+      allow update: if isValidId(leaveId) && isVerifiedUser() && isValidTeacherLeave(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Tier 1: Headmaster / Admin can review, approve, reject, or audit-archive
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'leaveType', 'startDate', 'endDate', 'totalDays', 'reason',
+            'supportingDocName', 'medicalDocumentUrl', 'status',
+            'headmasterRemarks', 'rejectionReason', 'approvedBy', 'approvalDate',
+            'deletedStatus', 'deletedBy', 'deletionReason', 'updatedAt'
+          ])) ||
+          // Tier 2: Teacher owner can edit or soft-delete ONLY while Pending (read-only once Approved or Rejected)
+          (existing().createdByUid == request.auth.uid &&
+            existing().status == 'Pending' &&
+            incoming().status == 'Pending' &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'leaveType', 'startDate', 'endDate', 'totalDays', 'reason',
+              'supportingDocName', 'medicalDocumentUrl',
+              'deletedStatus', 'deletedBy', 'deletionReason', 'updatedAt'
+            ]))
+        );
+      // Hard deletes disabled to preserve administrative audit history of deleted leave applications
+      allow delete: if false;
+    }
+
+    // /teacherAttendance/{recordId} - Date-wise Teacher Attendance & Daily Service Register
+    match /teacherAttendance/{recordId} {
+      allow get: if isValidId(recordId) && (isAdmin() || (isVerifiedUser() && existing().createdByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.createdByUid == request.auth.uid);
+      allow create: if isValidId(recordId) && isAdmin() && isValidTeacherAttendance(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(recordId) && isAdmin() && isValidTeacherAttendance(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().date == existing().date &&
+        incoming().teacherId == existing().teacherId &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'employeeId', 'teacherName', 'designation', 'status',
+          'checkInTime', 'checkOutTime', 'remarks', 'remarksByHoi',
+          'updatedBy', 'updatedAt'
+        ]);
+      // Preserve historical date-wise attendance records
+      allow delete: if false;
+    }
+
+    // /studentAttendance/{recordId} - Date-wise Student Daily Attendance & QR Check-in Records
+    match /studentAttendance/{recordId} {
+      allow get: if isValidId(recordId) && (isAdmin() || (isVerifiedUser() && existing().createdByUid == request.auth.uid));
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.createdByUid == request.auth.uid);
+      allow create: if isValidId(recordId) && isVerifiedUser() && isValidStudentAttendance(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(recordId) && isVerifiedUser() && isValidStudentAttendance(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().date == existing().date &&
+        incoming().studentId == existing().studentId &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (isAdmin() || existing().createdByUid == request.auth.uid) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'studentName', 'admissionNumber', 'classNumber', 'section', 'status',
+          'academicSession', 'markedByUserId', 'markedAt', 'remarks', 'updatedAt'
+        ]);
+      // Preserve student attendance audit trail
+      allow delete: if false;
+    }
+
+    // /schoolAboutUs/{docId} - School Admin-managed About Us & App Information (strictly separate from developer profile)
+    match /schoolAboutUs/{docId} {
+      allow get: if isValidId(docId) && isVerifiedUser();
+      allow list: if isAdmin();
+      allow create: if isValidId(docId) && isValidSchoolAboutUsInfo(incoming()) && isAdmin() &&
+        incoming().id == docId &&
+        incoming().updatedByUid == request.auth.uid &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(docId) && isValidSchoolAboutUsInfo(incoming()) && isAdmin() &&
+        incoming().id == existing().id &&
+        incoming().updatedByUid == request.auth.uid &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'schoolName', 'schoolIntroduction', 'schoolHistory', 'schoolVision',
+          'schoolMission', 'schoolObjectives', 'schoolAddress', 'schoolContactNumber',
+          'schoolEmail', 'schoolWebsite', 'schoolLogoUrl', 'schoolFacilities',
+          'principalsMessage', 'otherSchoolInfo', 'appName', 'appDescription',
+          'appVersion', 'appFeatures', 'appPurpose', 'appSupportEmail',
+          'appSupportContactNumber', 'privacyPolicy', 'termsAndConditions',
+          'copyrightInfo', 'updatedByUid', 'updatedByName', 'updatedByRole', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // /schoolInfoAuditLogs/{logId} - Immutable Audit Log of School About Us & App Information Updates
+    match /schoolInfoAuditLogs/{logId} {
+      allow get: if isValidId(logId) && isAdmin();
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.actorUid == request.auth.uid);
+      allow create: if isValidId(logId) && isValidSchoolInfoAuditLog(incoming()) && isAdmin() &&
+        incoming().id == logId &&
+        incoming().actorUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // /protectedDeveloperProfiles/{profileId} - STRICTLY PROTECTED Original App Developer / Super Admin Ownership Record
+    // School Admins can ONLY read; they are strictly forbidden from creating, modifying, replacing, or deleting developer records.
+    match /protectedDeveloperProfiles/{profileId} {
+      allow get: if isValidId(profileId) && isVerifiedUser();
+      allow list: if isVerifiedUser() && resource.data.isProtected == true;
+      allow create: if isValidId(profileId) && isValidProtectedDeveloperProfile(incoming()) && isSuperDeveloperAdmin() &&
+        incoming().id == profileId &&
+        incoming().updatedByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(profileId) && isValidProtectedDeveloperProfile(incoming()) && isSuperDeveloperAdmin() &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().isProtected == true &&
+        incoming().updatedByUid == request.auth.uid &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'developerName', 'developerProfile', 'designation', 'institution',
+          'locality', 'district', 'unionTerritory', 'developerEmail', 'developerPhone',
+          'administratorName', 'administratorProfile', 'ownershipNotice',
+          'updatedByUid', 'updatedAt'
+        ]);
+      // Original App Developer & Ownership records can NEVER be deleted
+      allow delete: if false;
+    }
+  }
+}

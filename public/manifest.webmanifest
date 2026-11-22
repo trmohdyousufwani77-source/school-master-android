@@ -1,0 +1,56 @@
+{
+  "id": "/school-master-pwa",
+  "name": "Smart School Master — Multi-Platform",
+  "short_name": "SchoolMaster",
+  "description": "Unified school management system for Android, iOS, and Windows with offline attendance, ID cards, and exams.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "categories": ["education", "productivity", "management"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Daily Attendance",
+      "short_name": "Attendance",
+      "description": "Mark today's student attendance and sync offline",
+      "url": "/?tab=attendance",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Student ID Cards",
+      "short_name": "ID Cards",
+      "description": "Generate and print QR Student ID cards",
+      "url": "/?tab=id-card-maker",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Examination Module",
+      "short_name": "Exams",
+      "description": "Marks entry and CCE report cards",
+      "url": "/?tab=examinations",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

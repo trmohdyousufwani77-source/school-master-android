@@ -1,0 +1,545 @@
+{
+  "entities": {
+    "SchoolProfile": {
+      "title": "SchoolProfile",
+      "description": "Official institution metadata for Government Middle School Pamposh Colony.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "nameUrdu": { "type": "string", "maxLength": 200 },
+        "code": { "type": "string", "minLength": 4, "maxLength": 32 },
+        "address": { "type": "string", "maxLength": 300 },
+        "district": { "type": "string", "maxLength": 80 },
+        "state": { "type": "string", "maxLength": 80 },
+        "pinCode": { "type": "string", "maxLength": 16 },
+        "academicSession": { "type": "string", "maxLength": 32 },
+        "headTeacherName": { "type": "string", "maxLength": 120 },
+        "motto": { "type": "string", "maxLength": 120 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "code", "academicSession"]
+    },
+    "PrincipalRecord": {
+      "title": "PrincipalRecord",
+      "description": "Current and historical Principal / Headmaster records for Government Middle School Pamposh Colony.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "designation": {
+          "type": "string",
+          "enum": ["Principal", "Headmaster", "Headmistress", "Officiating Principal", "In-Charge Headmaster"]
+        },
+        "joiningDate": { "type": "string", "maxLength": 32 },
+        "leavingDate": { "type": "string", "maxLength": 32 },
+        "contactNumber": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 120 },
+        "qualification": { "type": "string", "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "isCurrent": { "type": "boolean" },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "fullName", "designation", "joiningDate", "isCurrent", "createdByUid", "createdAt", "updatedAt"]
+    },
+    "StudentRecord": {
+      "title": "StudentRecord",
+      "description": "Structured student admission register record supporting OCR bulk registration.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "admissionNumber": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "fatherName": { "type": "string", "maxLength": 140 },
+        "motherName": { "type": "string", "maxLength": 140 },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "dob": { "type": "string", "maxLength": 32 },
+        "classNumber": { "type": "string", "maxLength": 24 },
+        "section": { "type": "string", "maxLength": 16 },
+        "rollNumber": { "type": "integer" },
+        "category": { "type": "string", "maxLength": 40 },
+        "religion": { "type": "string", "maxLength": 40 },
+        "nationality": { "type": "string", "maxLength": 60 },
+        "address": { "type": "string", "maxLength": 300 },
+        "mobileNumber": { "type": "string", "maxLength": 32 },
+        "previousSchool": { "type": "string", "maxLength": 160 },
+        "admissionDate": { "type": "string", "maxLength": 32 },
+        "academicSession": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["Active", "Transferred", "Graduated", "Archived"] },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "admissionNumber", "fullName", "classNumber", "section", "status", "createdByUid", "createdAt", "updatedAt"]
+    },
+    "OcrImportBatch": {
+      "title": "OcrImportBatch",
+      "description": "Audit log of bulk OCR/Excel student registration import batches.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "sourceName": { "type": "string", "maxLength": 200 },
+        "sourceType": { "type": "string", "enum": ["camera", "image", "pdf", "excel", "csv", "text"] },
+        "totalScanned": { "type": "integer" },
+        "importedCount": { "type": "integer" },
+        "failedCount": { "type": "integer" },
+        "duplicateCount": { "type": "integer" },
+        "undone": { "type": "boolean" },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sourceName", "sourceType", "totalScanned", "importedCount", "actorUid", "createdAt"]
+    },
+    "FontLigatureReport": {
+      "title": "FontLigatureReport",
+      "description": "Teacher-submitted missing or overlapping Noori Nastaleeq ligature report for font-face optimization.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "word": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "unicodeHex": { "type": "string", "maxLength": 250 },
+        "issueType": { "type": "string", "enum": ["Missing Glyph", "Overlapping Nuqta", "Broken Join", "Spacing Anomaly"] },
+        "notes": { "type": "string", "maxLength": 400 },
+        "reportedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "word", "issueType", "reportedByUid", "createdAt"]
+    },
+    "AdminUserEntry": {
+      "title": "AdminUserEntry",
+      "description": "Authorised administrator access record stored in /admins/{uid}.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 160 },
+        "name": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["primary_admin", "senior_admin", "junior_admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "FcmTokenRecord": {
+      "title": "FcmTokenRecord",
+      "description": "Firebase Cloud Messaging device registration token for teachers and administrators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "token": { "type": "string", "minLength": 10, "maxLength": 512 },
+        "role": { "type": "string", "enum": ["teacher", "admin", "principal"] },
+        "platform": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "token", "role", "createdAt", "updatedAt"]
+    },
+    "PushNotificationRecord": {
+      "title": "PushNotificationRecord",
+      "description": "Dispatched FCM/push notification log for teacher leave decisions, attendance threshold alerts, and 3-day exam reminders.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "message": { "type": "string", "minLength": 2, "maxLength": 600 },
+        "category": { "type": "string", "enum": ["System", "Academic", "Attendance", "Inspection", "Leave", "Exam"] },
+        "targetRole": { "type": "string", "enum": ["teacher", "admin", "all"] },
+        "priority": { "type": "string", "enum": ["high", "normal"] },
+        "senderUid": { "type": "string", "maxLength": 128 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "message", "category", "targetRole", "priority", "senderUid", "read", "createdAt"]
+    },
+    "ExcelMappingSchema": {
+      "title": "ExcelMappingSchema",
+      "description": "Administrator-configured custom Excel column mapping schema for student bulk imports.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 300 },
+        "sheetName": { "type": "string", "maxLength": 80 },
+        "columnsCount": { "type": "integer" },
+        "isDefault": { "type": "boolean" },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdByName": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "columnsCount", "isDefault", "createdByUid", "createdAt", "updatedAt"]
+    },
+    "JkepmAppraisalSubmission": {
+      "title": "JkepmAppraisalSubmission",
+      "description": "Teacher JKEPM Quarterly Self-Assessment & Appraisal report linked to updated CPIS Code.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "teacherId": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "teacherName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "employeeId": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "cpisCode": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "previousCpisCode": { "type": "string", "maxLength": 40 },
+        "designation": { "type": "string", "maxLength": 140 },
+        "schoolName": { "type": "string", "maxLength": 180 },
+        "schoolUdiseCode": { "type": "string", "maxLength": 32 },
+        "academicSession": { "type": "string", "maxLength": 32 },
+        "quarter": {
+          "type": "string",
+          "enum": ["Q1 (Apr - Jun)", "Q2 (Jul - Sep)", "Q3 (Oct - Dec)", "Q4 (Jan - Mar)"]
+        },
+        "reportingPeriod": { "type": "string", "maxLength": 80 },
+        "status": {
+          "type": "string",
+          "enum": ["Draft", "Submitted", "Returned_For_Correction", "Recommended_By_HOI", "Approved", "Rejected"]
+        },
+        "totalWorkingDays": { "type": "integer" },
+        "totalDaysAttended": { "type": "integer" },
+        "totalLeaveDays": { "type": "integer" },
+        "attendancePercentage": { "type": "number" },
+        "selfAssessmentScore": { "type": "number" },
+        "hoiRemarks": { "type": "string", "maxLength": 1000 },
+        "districtRemarks": { "type": "string", "maxLength": 1000 },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "teacherId",
+        "teacherName",
+        "employeeId",
+        "cpisCode",
+        "schoolUdiseCode",
+        "academicSession",
+        "quarter",
+        "status",
+        "createdByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CpisCodeMigration": {
+      "title": "CpisCodeMigration",
+      "description": "Authorized CPIS Code update and immutable audit record preserving legacy CPIS codes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "teacherId": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "teacherName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "schoolUdiseCode": { "type": "string", "maxLength": 32 },
+        "oldCpisCode": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "newCpisCode": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "status": { "type": "string", "enum": ["Pending_Verification", "Approved", "Rejected"] },
+        "requestedByUid": { "type": "string", "maxLength": 128 },
+        "requestedByName": { "type": "string", "maxLength": 140 },
+        "verifiedByName": { "type": "string", "maxLength": 140 },
+        "remarks": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "teacherId",
+        "teacherName",
+        "oldCpisCode",
+        "newCpisCode",
+        "status",
+        "requestedByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TeacherLeaveRecord": {
+      "title": "TeacherLeaveRecord",
+      "description": "Complete Teacher Leave Application record supporting Casual & Medical Leave, document metadata, Headmaster review/approval/rejection, and soft-deletion audit status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "teacherId": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "employeeId": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "teacherName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "leaveType": {
+          "type": "string",
+          "enum": ["Casual_Leave", "Medical_Leave", "Earned_Leave", "Special_Duty", "Maternity_Paternity"]
+        },
+        "applicationDate": { "type": "string", "maxLength": 32 },
+        "startDate": { "type": "string", "maxLength": 32 },
+        "endDate": { "type": "string", "maxLength": 32 },
+        "totalDays": { "type": "integer" },
+        "reason": { "type": "string", "minLength": 2, "maxLength": 1000 },
+        "supportingDocName": { "type": "string", "maxLength": 200 },
+        "medicalDocumentUrl": { "type": "string", "maxLength": 500 },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Under_Review", "Approved", "Rejected"]
+        },
+        "headmasterRemarks": { "type": "string", "maxLength": 1000 },
+        "rejectionReason": { "type": "string", "maxLength": 1000 },
+        "approvedBy": { "type": "string", "maxLength": 140 },
+        "approvalDate": { "type": "string", "maxLength": 32 },
+        "deletedStatus": { "type": "string", "enum": ["Active", "Deleted"] },
+        "deletedBy": { "type": "string", "maxLength": 140 },
+        "deletionReason": { "type": "string", "maxLength": 500 },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "teacherId",
+        "employeeId",
+        "teacherName",
+        "leaveType",
+        "applicationDate",
+        "startDate",
+        "endDate",
+        "totalDays",
+        "reason",
+        "status",
+        "deletedStatus",
+        "createdByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TeacherAttendanceEntry": {
+      "title": "TeacherAttendanceEntry",
+      "description": "Date-wise teacher daily attendance and service register record storing Arrival Time, Departure Time, Designation, Attendance Status, Remarks by HOI, and update metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "date": { "type": "string", "minLength": 4, "maxLength": 32 },
+        "teacherId": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "employeeId": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "teacherName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "designation": { "type": "string", "maxLength": 140 },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Present",
+            "Absent",
+            "Casual Leave (CL)",
+            "Medical Leave (ML)",
+            "On Duty (OD)",
+            "Half Day",
+            "Late Arrival",
+            "Other",
+            "Late",
+            "On_Duty",
+            "Leave",
+            "On Leave",
+            "Official Duty",
+            "Holiday",
+            "Weekly Off"
+          ]
+        },
+        "checkInTime": { "type": "string", "maxLength": 32 },
+        "checkOutTime": { "type": "string", "maxLength": 32 },
+        "remarks": { "type": "string", "maxLength": 1000 },
+        "remarksByHoi": { "type": "string", "maxLength": 1000 },
+        "updatedBy": { "type": "string", "maxLength": 140 },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "date",
+        "teacherId",
+        "employeeId",
+        "teacherName",
+        "status",
+        "createdByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudentAttendanceEntry": {
+      "title": "StudentAttendanceEntry",
+      "description": "Date-wise student daily attendance record (including touchless QR scan check-ins and offline-synced roll-call entries).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "date": { "type": "string", "minLength": 4, "maxLength": 32 },
+        "studentId": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "studentName": { "type": "string", "maxLength": 140 },
+        "admissionNumber": { "type": "string", "maxLength": 64 },
+        "classNumber": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "section": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "status": {
+          "type": "string",
+          "enum": ["Present", "Absent", "Late", "Approved_Leave"]
+        },
+        "academicSession": { "type": "string", "maxLength": 32 },
+        "markedByUserId": { "type": "string", "maxLength": 80 },
+        "markedAt": { "type": "string", "maxLength": 64 },
+        "remarks": { "type": "string", "maxLength": 500 },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "date",
+        "studentId",
+        "classNumber",
+        "section",
+        "status",
+        "createdByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SchoolAboutUsInfo": {
+      "title": "SchoolAboutUsInfo",
+      "description": "School Admin-managed About Us and App Information metadata, strictly separated from protected developer records.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "schoolName": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "schoolIntroduction": { "type": "string", "maxLength": 2000 },
+        "schoolHistory": { "type": "string", "maxLength": 2000 },
+        "schoolVision": { "type": "string", "maxLength": 1000 },
+        "schoolMission": { "type": "string", "maxLength": 1000 },
+        "schoolObjectives": { "type": "string", "maxLength": 1500 },
+        "schoolAddress": { "type": "string", "maxLength": 350 },
+        "schoolContactNumber": { "type": "string", "maxLength": 40 },
+        "schoolEmail": { "type": "string", "maxLength": 140 },
+        "schoolWebsite": { "type": "string", "maxLength": 220 },
+        "schoolLogoUrl": { "type": "string", "maxLength": 500 },
+        "schoolFacilities": { "type": "string", "maxLength": 1500 },
+        "principalsMessage": { "type": "string", "maxLength": 2000 },
+        "otherSchoolInfo": { "type": "string", "maxLength": 1500 },
+        "appName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "appDescription": { "type": "string", "maxLength": 1500 },
+        "appVersion": { "type": "string", "maxLength": 40 },
+        "appFeatures": { "type": "string", "maxLength": 2000 },
+        "appPurpose": { "type": "string", "maxLength": 1200 },
+        "appSupportEmail": { "type": "string", "maxLength": 140 },
+        "appSupportContactNumber": { "type": "string", "maxLength": 40 },
+        "privacyPolicy": { "type": "string", "maxLength": 3000 },
+        "termsAndConditions": { "type": "string", "maxLength": 3000 },
+        "copyrightInfo": { "type": "string", "maxLength": 300 },
+        "updatedByUid": { "type": "string", "maxLength": 128 },
+        "updatedByName": { "type": "string", "maxLength": 140 },
+        "updatedByRole": { "type": "string", "maxLength": 40 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "schoolName", "appName", "updatedByUid", "updatedAt"]
+    },
+    "SchoolInfoAuditLog": {
+      "title": "SchoolInfoAuditLog",
+      "description": "Immutable audit trail recording every update to School About Us and App Information by School Admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "section": { "type": "string", "enum": ["About Us", "App Information", "School Logo"] },
+        "action": { "type": "string", "enum": ["CREATE", "UPDATE"] },
+        "changedFields": { "type": "string", "maxLength": 600 },
+        "summary": { "type": "string", "minLength": 2, "maxLength": 600 },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 140 },
+        "actorRole": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "section", "action", "summary", "actorUid", "actorName", "actorRole", "createdAt"]
+    },
+    "ProtectedDeveloperProfile": {
+      "title": "ProtectedDeveloperProfile",
+      "description": "Strictly protected separate collection storing original App Developer and Super Administrator ownership details (read-only for School Admins).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "maxLength": 128 },
+        "developerName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "developerProfile": { "type": "string", "maxLength": 1000 },
+        "designation": { "type": "string", "maxLength": 140 },
+        "institution": { "type": "string", "maxLength": 180 },
+        "locality": { "type": "string", "maxLength": 120 },
+        "district": { "type": "string", "maxLength": 80 },
+        "unionTerritory": { "type": "string", "maxLength": 100 },
+        "developerEmail": { "type": "string", "maxLength": 140 },
+        "developerPhone": { "type": "string", "maxLength": 40 },
+        "administratorName": { "type": "string", "maxLength": 140 },
+        "administratorProfile": { "type": "string", "maxLength": 1000 },
+        "ownershipNotice": { "type": "string", "maxLength": 500 },
+        "isProtected": { "type": "boolean" },
+        "updatedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "developerName", "designation", "isProtected", "updatedByUid", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminUserEntry" },
+      "description": "Registry of authorised school administrators."
+    },
+    "/schools/{schoolId}": {
+      "schema": { "$ref": "#/entities/SchoolProfile" },
+      "description": "Official school configuration and branding metadata."
+    },
+    "/principals/{principalId}": {
+      "schema": { "$ref": "#/entities/PrincipalRecord" },
+      "description": "Current and past Principal / Headmaster records."
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentRecord" },
+      "description": "Structured student admission database."
+    },
+    "/ocrBatches/{batchId}": {
+      "schema": { "$ref": "#/entities/OcrImportBatch" },
+      "description": "Bulk OCR/Excel import batch audit records."
+    },
+    "/ligatureReports/{reportId}": {
+      "schema": { "$ref": "#/entities/FontLigatureReport" },
+      "description": "Reported Noori Nastaleeq ligature issues for font optimization."
+    },
+    "/fcmTokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/FcmTokenRecord" },
+      "description": "Registered Firebase Cloud Messaging tokens per user device."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/PushNotificationRecord" },
+      "description": "Push notification dispatch feed synced across staff and principals."
+    },
+    "/excelMappingSchemas/{schemaId}": {
+      "schema": { "$ref": "#/entities/ExcelMappingSchema" },
+      "description": "Saved custom Excel template column mapping schemas defined by school administrators."
+    },
+    "/jkepmSubmissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/JkepmAppraisalSubmission" },
+      "description": "JKEPM Quarterly Self-Assessment & Appraisal reports with class teaching, timetable, leave orders, and HOI verification."
+    },
+    "/cpisMigrations/{migrationId}": {
+      "schema": { "$ref": "#/entities/CpisCodeMigration" },
+      "description": "Controlled CPIS Code migration records maintaining old-to-new CPIS audit trails."
+    },
+    "/teacherLeaves/{leaveId}": {
+      "schema": { "$ref": "#/entities/TeacherLeaveRecord" },
+      "description": "Teacher Casual & Medical Leave applications with Headmaster Review/Approve/Reject workflow and audit soft-deletion."
+    },
+    "/teacherAttendance/{recordId}": {
+      "schema": { "$ref": "#/entities/TeacherAttendanceEntry" },
+      "description": "Date-wise teacher daily attendance and service register entries with Arrival/Departure times, Designation, Attendance Status, and HOI Remarks."
+    },
+    "/studentAttendance/{recordId}": {
+      "schema": { "$ref": "#/entities/StudentAttendanceEntry" },
+      "description": "Date-wise student daily attendance entries including QR code scanner check-ins and automated offline-to-online sync uploads."
+    },
+    "/schoolAboutUs/{docId}": {
+      "schema": { "$ref": "#/entities/SchoolAboutUsInfo" },
+      "description": "School Admin-managed About Us and App Information details."
+    },
+    "/schoolInfoAuditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/SchoolInfoAuditLog" },
+      "description": "Immutable audit log of School About Us and App Information updates."
+    },
+    "/protectedDeveloperProfiles/{profileId}": {
+      "schema": { "$ref": "#/entities/ProtectedDeveloperProfile" },
+      "description": "Strictly protected separate collection storing original App Developer and Super Administrator profile details, read-only for School Admins."
+    }
+  }
+}

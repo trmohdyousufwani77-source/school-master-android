@@ -1,0 +1,279 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: 'Noori Nastaleeq';
+  src: url('/fonts/NooriNastaliq.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noori Nastaleeq';
+  src: url('/fonts/NooriNastaliq.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-noori {
+  font-family: 'Noori Nastaleeq', 'Jameel Noori Nastaleeq', 'NooriNastaliq', serif !important;
+  direction: rtl;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.font-noori.kern-optimize,
+.font-noori.kern-optimize * {
+  font-feature-settings: "kern" 0 !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+.font-noori.rtl-debug div,
+.font-noori.rtl-debug p,
+.font-noori.rtl-debug h1,
+.font-noori.rtl-debug h2,
+.font-noori.rtl-debug h3,
+.font-noori.rtl-debug h4,
+.font-noori.rtl-debug h5,
+.font-noori.rtl-debug h6,
+.font-noori.rtl-debug section,
+.font-noori.rtl-debug article,
+.font-noori.rtl-debug aside,
+.font-noori.rtl-debug header,
+.font-noori.rtl-debug footer,
+.font-noori.rtl-debug main,
+.font-noori.rtl-debug nav,
+.font-noori.rtl-debug ul,
+.font-noori.rtl-debug ol,
+.font-noori.rtl-debug li,
+.font-noori.rtl-debug dl,
+.font-noori.rtl-debug dt,
+.font-noori.rtl-debug dd,
+.font-noori.rtl-debug blockquote,
+.font-noori.rtl-debug figure,
+.font-noori.rtl-debug figcaption,
+.font-noori.rtl-debug form,
+.font-noori.rtl-debug fieldset,
+.font-noori.rtl-debug table,
+.font-noori.rtl-debug pre,
+.font-noori.rtl-debug address,
+.font-noori.rtl-debug details,
+.font-noori.rtl-debug summary,
+.font-noori.rtl-debug hgroup {
+  outline: 1px dashed crimson !important;
+}
+
+.font-noori .noori-ligature-token {
+  transition: background-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+  border-radius: 0.25rem;
+}
+
+.font-noori.ligature-inspector .noori-ligature-token {
+  background-color: #fef9c3;
+  color: #713f12;
+  box-shadow: inset 0 -1.5px 0 #facc15;
+  padding-inline: 2px;
+}
+
+.font-noori.ligature-inspector .noori-ligature-token.noori-ligature-risk {
+  background-color: #fef08a;
+  color: #713f12;
+  box-shadow: inset 0 -2px 0 #eab308, 0 0 0 1px rgba(234, 179, 8, 0.55);
+  padding-inline: 3px;
+}
+
+.font-noori.high-contrast-reading {
+  background-color: #0f172a !important;
+  color: #bef264 !important;
+  border-color: rgba(190, 242, 100, 0.45) !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.65);
+}
+
+.font-noori.high-contrast-reading [data-noori-text="true"],
+.font-noori.high-contrast-reading [data-noori-text="true"] span:not(.noori-ligature-token),
+.font-noori.high-contrast-reading [data-noori-text="true"] p {
+  color: #bef264 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.font-noori.high-contrast-reading.ligature-inspector .noori-ligature-token {
+  background-color: #fef08a !important;
+  color: #0f172a !important;
+}
+
+.font-urdu {
+  font-family: 'Noori Nastaleeq', 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif;
+  direction: rtl;
+}
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0b1120;
+  color: #f8fafc;
+}
+
+/* Night-time high-contrast surface overrides */
+html.dark .bg-white {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-100 {
+  border-color: #1e293b;
+}
+
+html.dark .text-slate-900 {
+  color: #f8fafc;
+}
+
+html.dark .text-slate-800 {
+  color: #e2e8f0;
+}
+
+html.dark .text-slate-700 {
+  color: #cbd5e1;
+}
+
+html.dark .text-slate-600 {
+  color: #94a3b8;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #0b1120;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1e293b;
+}
+
+
+/* Custom Print Layout Optimization for Report Cards & Statements */
+@media print {
+  /* Hide interactive web UI during printing */
+  .no-print,
+  nav,
+  aside,
+  header,
+  button,
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .printable-card {
+    box-shadow: none !important;
+    border: 1px solid #1e293b !important;
+    page-break-after: always;
+    margin: 0 auto;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .page-break-always {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .print-break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* Android frame simulation styles */
+.android-frame {
+  max-width: 440px;
+  height: 880px;
+  border-radius: 44px;
+  border: 12px solid #1e293b;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4);
+}
+
+.android-tablet-frame {
+  max-width: 1024px;
+  height: 740px;
+  border-radius: 32px;
+  border: 14px solid #1e293b;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
+}
+
+/* Scrollbar tweaks */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* QR Camera Scanner Viewfinder Laser & Pulse Animations */
+@keyframes qrLaserScan {
+  0% {
+    top: 4%;
+    opacity: 0.85;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 4%;
+    opacity: 0.85;
+  }
+}
+
+@keyframes qrReticlePulse {
+  0%, 100% {
+    border-color: rgba(52, 211, 153, 0.45);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2), inset 0 0 16px rgba(16, 185, 129, 0.08);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.9);
+    box-shadow: 0 0 20px 2px rgba(16, 185, 129, 0.4), inset 0 0 28px rgba(16, 185, 129, 0.2);
+  }
+}
+
+.animate-qr-laser {
+  animation: qrLaserScan 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.animate-qr-reticle {
+  animation: qrReticlePulse 2.5s ease-in-out infinite;
+}
+

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bgGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4338ca"/>
+      <stop offset="50%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="capGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bgGrad192)"/>
+  <rect x="3" y="3" width="186" height="186" rx="39" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+  <g transform="translate(0, 4)">
+    <polygon points="96,40 162,75 96,110 30,75" fill="#ffffff"/>
+    <polygon points="96,105 150,77 150,87 96,115 42,87 42,77" fill="#e0e7ff"/>
+    <circle cx="96" cy="75" r="4" fill="url(#capGrad192)"/>
+    <path d="M96,75 Q75,78 68,102" stroke="url(#capGrad192)" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <rect x="65" y="102" width="6" height="10" rx="1.5" fill="url(#capGrad192)"/>
+    <path d="M56,124 C75,116 90,120 96,128 C102,116 117,116 136,124 L136,150 C117,142 102,142 96,154 C90,142 75,142 56,150 Z" fill="#ffffff"/>
+    <line x1="96" y1="128" x2="96" y2="154" stroke="#4f46e5" stroke-width="2"/>
+  </g>
+</svg>

@@ -1,0 +1,228 @@
+name: Android Build, Sign & Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Build mode: debug (debug keystore) or release (signed via GitHub Secrets keystore)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      release_tag:
+        description: 'Optional GitHub Release tag (defaults to v1.0.4-<mode>.<run_number>)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build & Sign Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine Build Mode (Debug vs Release)
+        id: build_config
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ inputs.build_mode }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            MODE="release"
+          else
+            MODE="debug"
+          fi
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Selected Android build mode: $MODE"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Decode Release Keystore from GitHub Secrets
+        if: steps.build_config.outputs.mode == 'release'
+        id: decode_keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASS" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASS" ]; then
+            echo "ERROR: Release mode requires all 4 GitHub Actions Secrets:"
+            echo "  - ANDROID_KEYSTORE_BASE64"
+            echo "  - ANDROID_KEYSTORE_PASSWORD"
+            echo "  - ANDROID_KEY_ALIAS"
+            echo "  - ANDROID_KEY_PASSWORD"
+            echo "Configure them in Repository Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          KEYSTORE_FILE="${{ runner.temp }}/schoolmaster-release.keystore"
+          echo "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE_FILE"
+          chmod 600 "$KEYSTORE_FILE"
+          echo "keystore_path=$KEYSTORE_FILE" >> "$GITHUB_OUTPUT"
+          echo "Release keystore decoded successfully."
+
+      - name: Run Unit Tests & Build Signed APK
+        working-directory: android-app
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ANDROID_KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.keystore_path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          MODE="${{ steps.build_config.outputs.mode }}"
+          if [ "$MODE" = "release" ]; then
+            GRADLE_TASKS="testReleaseUnitTest assembleRelease"
+          else
+            GRADLE_TASKS="testDebugUnitTest assembleDebug"
+          fi
+
+          if [ -f gradlew ] && [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+            chmod +x gradlew
+            ./gradlew $GRADLE_TASKS --no-daemon --stacktrace
+          else
+            gradle $GRADLE_TASKS --no-daemon --stacktrace
+          fi
+
+      - name: Verify APK Signature & Prepare Distribution Assets
+        id: package_apk
+        shell: bash
+        run: |
+          MODE="${{ steps.build_config.outputs.mode }}"
+          if [ "$MODE" = "release" ]; then
+            APK_PATH="android-app/app/build/outputs/apk/release/app-release.apk"
+            APP_ID="in.gov.jk.schoolmaster"
+          else
+            APK_PATH="android-app/app/build/outputs/apk/debug/app-debug.apk"
+            APP_ID="in.gov.jk.schoolmaster.debug"
+          fi
+
+          if [ ! -s "$APK_PATH" ]; then
+            echo "ERROR: Expected signed APK not found or empty at $APK_PATH"
+            exit 1
+          fi
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APKSIGNER_BIN=$(find "$SDK_ROOT/build-tools" -maxdepth 2 -name apksigner 2>/dev/null | sort -V | tail -n 1 || true)
+          if [ -n "$APKSIGNER_BIN" ]; then
+            echo "Verifying APK signature with $APKSIGNER_BIN"
+            "$APKSIGNER_BIN" verify --print-certs "$APK_PATH"
+          else
+            echo "Warning: apksigner not found in build-tools; skipping certificate print."
+          fi
+
+          mkdir -p release-assets
+          VERSIONED_NAME="SchoolMaster-v1.0.4-${MODE}-r${{ github.run_number }}.apk"
+          LATEST_NAME="SchoolMaster-${MODE}-latest.apk"
+
+          cp "$APK_PATH" "release-assets/$VERSIONED_NAME"
+          cp "$APK_PATH" "release-assets/$LATEST_NAME"
+
+          (
+            cd release-assets
+            sha256sum "$VERSIONED_NAME" > "${VERSIONED_NAME}.sha256"
+            sha256sum "$LATEST_NAME" > "${LATEST_NAME}.sha256"
+          )
+
+          APK_SIZE_BYTES=$(wc -c < "release-assets/$VERSIONED_NAME")
+          APK_SHA256=$(awk '{print $1}' "release-assets/${VERSIONED_NAME}.sha256")
+          RELEASE_TAG="${{ inputs.release_tag }}"
+          if [ -z "$RELEASE_TAG" ]; then
+            if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+              RELEASE_TAG="${{ github.ref_name }}"
+            else
+              RELEASE_TAG="v1.0.4-${MODE}.${{ github.run_number }}"
+            fi
+          fi
+
+          DIRECT_APK_URL="https://github.com/${{ github.repository }}/releases/latest/download/${LATEST_NAME}"
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "app_id=$APP_ID" >> "$GITHUB_OUTPUT"
+          echo "versioned_name=$VERSIONED_NAME" >> "$GITHUB_OUTPUT"
+          echo "latest_name=$LATEST_NAME" >> "$GITHUB_OUTPUT"
+          echo "apk_size_bytes=$APK_SIZE_BYTES" >> "$GITHUB_OUTPUT"
+          echo "apk_sha256=$APK_SHA256" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "direct_apk_url=$DIRECT_APK_URL" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### School Master Android APK Build (${MODE^^})"
+            echo "- **Application ID:** \`$APP_ID\`"
+            echo "- **Build Mode:** \`$MODE\`"
+            echo "- **Versioned APK:** \`$VERSIONED_NAME\`"
+            echo "- **Latest Stable Filename:** \`$LATEST_NAME\`"
+            echo "- **Direct Download URL:** $DIRECT_APK_URL"
+            echo "- **APK Size:** \`$APK_SIZE_BYTES\` bytes"
+            echo "- **SHA-256:** \`$APK_SHA256\`"
+            echo "- **Release Tag:** \`$RELEASE_TAG\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: school-master-${{ steps.build_config.outputs.mode }}-apk
+          path: release-assets/*
+          retention-days: 30
+
+      - name: Publish Signed APK to GitHub Releases
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.package_apk.outputs.release_tag }}
+          name: School Master ${{ steps.package_apk.outputs.mode == 'release' && 'Release' || 'Debug' }} APK (${{ steps.package_apk.outputs.release_tag }})
+          make_latest: true
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            Automated **${{ steps.package_apk.outputs.mode }}** APK build for **School Master (Govt Middle School Pamposh Colony)**.
+
+            ### Direct Device Download
+            - **Latest Direct APK URL:** `${{ steps.package_apk.outputs.direct_apk_url }}`
+            - **Versioned APK:** `${{ steps.package_apk.outputs.versioned_name }}`
+            - **Application ID:** `${{ steps.package_apk.outputs.app_id }}`
+            - **Signing:** ${{ steps.package_apk.outputs.mode == 'release' && 'Production Release Keystore (GitHub Secrets)' || 'Android Debug Keystore (Testing & Sideloading)' }}
+            - **Size:** `${{ steps.package_apk.outputs.apk_size_bytes }}` bytes
+            - **SHA-256:** `${{ steps.package_apk.outputs.apk_sha256 }}`
+          files: |
+            release-assets/${{ steps.package_apk.outputs.versioned_name }}
+            release-assets/${{ steps.package_apk.outputs.versioned_name }}.sha256
+            release-assets/${{ steps.package_apk.outputs.latest_name }}
+            release-assets/${{ steps.package_apk.outputs.latest_name }}.sha256
+
+      - name: Clean up Temporary Release Keystore
+        if: always() && steps.decode_keystore.outputs.keystore_path != ''
+        shell: bash
+        run: rm -f "${{ steps.decode_keystore.outputs.keystore_path }}"
